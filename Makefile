@@ -6,7 +6,7 @@ OUTNAME=h0h0
 all: $(OUTNAME).so
 
 $(OUTNAME).so:
-  $(CC) $(CFLAGS) -o $(OUTNAME).so $(CFILES)
+	$(CC) $(CFLAGS) -o $(OUTNAME).so $(CFILES)
 
 clean:
 	rm -f *.so
