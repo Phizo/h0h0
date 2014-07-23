@@ -85,7 +85,7 @@ int watchdog(char *func)
     wd_size = sizeof watchdogs / sizeof watchdogs[0];
 
     for(i = 0; i < wd_size; i++)
-        if(strncmp(watchdogs[i], func, sizeof(func)) == 0)
+        if(strncmp(watchdogs[i], func, strlen(func)) == 0)
             return 1;
 
     return 0;
