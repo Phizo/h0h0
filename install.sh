@@ -17,7 +17,7 @@ echo -e '/\n\n'
 make
 
 if [ -f $OUTFILE ]; then
-	echo -e "[+] Writing \e[1m$OUTFILE\e[0m to \e[1m/etc/ld.so.preload\e[0m."
+    echo -e "[+] Writing \e[1m$OUTFILE\e[0m to \e[1m/etc/ld.so.preload\e[0m."
     echo    $OUTFILE > /etc/ld.so.preload
 
     echo -e "[+] Installation $SUCCESS\n";
