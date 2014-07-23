@@ -22,6 +22,6 @@ if [ -f $OUTFILE ]; then
     echo $OUTFILE > /etc/ld.so.preload
     echo -e "[+] Installation $SUCCESS\n";
 else
-    echo "[+] ** $OUTFILE not found; cannot write to /etc/ld.so.preload. **\n" 1>&2;
+    echo -e "[+] ** $OUTFILE not found; cannot write to /etc/ld.so.preload. **\n" 1>&2;
     echo -e "[+] Installation $FAILED\n";
 fi
