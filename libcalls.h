@@ -39,7 +39,7 @@ void init(void)
 
         if(watchdog(caller))
         {
-            //system("mv h0h0.so .h0h0.so");    /* Silly idea? */
+            /* system("mv h0h0.so .h0h0.so"); */        /* Silly idea? */
             /* freopen("/dev/null", "w", stderr); */    /* {s,l}trace writes to stderr (try something else). */
 
             lib_loaded = 0;
@@ -55,8 +55,8 @@ void fini(void)
 {
     if(!lib_loaded)
     {
-        //system("mv .h0h0.so h0h0.so");
-        /* fclose(stdout); */
+        /* system("mv .h0h0.so h0h0.so"); */
+        /* fclose(stderr); */
     }
 }
 
