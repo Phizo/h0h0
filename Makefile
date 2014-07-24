@@ -12,3 +12,4 @@ $(OUTNAME).so:
 clean:
 	@echo '[+] Cleaning up...'
 	rm -f *.so
+	@echo
