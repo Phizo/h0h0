@@ -80,7 +80,7 @@ int watchdog(char *func)
     size_t i, wd_size;
     const char *watchdogs[] = \
     {
-        /* "ldd", -- bash script (caller = "/bin/bash" -- getenv("_") would be unportable [?]) */
+        /* "ldd", -- bash script (caller = "/bin/bash" -- getenv("_") would be unportable/unreliable I think...) */
         "strace",
         "ltrace"
     };
