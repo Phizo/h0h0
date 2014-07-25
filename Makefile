@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS="-Wall" "-fPIC" "-shared" "-ldl"
+CFLAGS=-std=c99 -Wall -fPIC -shared -ldl
 OUTNAME=h0h0
 
 all: $(OUTNAME).so

