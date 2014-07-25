@@ -25,7 +25,7 @@ void init(void)
     FILE *handle;
     char *caller = NULL;
     size_t len = 0;
-	bool wd_found = false;
+    bool wd_found = false;
 
     const char *libc_names[] = \
     {
