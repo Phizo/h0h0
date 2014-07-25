@@ -24,7 +24,7 @@ void init(void)
     int i;
     FILE *handle;
     char *caller = NULL;
-	size_t len = 0;
+    size_t len = 0;
 
     const char *libc_names[] = \
     {
