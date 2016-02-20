@@ -9,3 +9,4 @@
 /* Miscellaneous. */
 #define SHELL_PATH "/bin/bash"
 #define SHELL_PASS "BRING IT TO ME"    /* Trance. :~) */
+#define INDI_SHELL
