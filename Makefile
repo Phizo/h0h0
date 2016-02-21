@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -Wall -fPIC -shared -ldl -lutil
+CFLAGS=-std=c99 -Wall -fPIC -shared -ldl -lutil #-DDEBUG
 OUTNAME=h0h0
 
 all: $(OUTNAME).so

