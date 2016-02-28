@@ -1,13 +1,13 @@
-#ifndef H0H0_H
-#define H0H0_H
+#pragma once
 
-#include <stdio.h>
-
-/* Debug output. */
 #ifdef DEBUG
-#define debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
-#else
-    #define debug(fmt, ...) /* Not debugging. */
-#endif
+    /* Debug output. */
+    #define debug(fmt, ...) fprintf(stderr, fmt, ##__VA_ARGS__)
 
-#endif // H0H0_H
+    /* Error output. */
+    #define debug_err(fmt, ...) warn(fmt, ##__VA_ARGS__)
+#else
+    /* Not debugging. */
+    #define debug(fmt, ...) 
+    #define debug_err(fmt, ...)
+#endif
